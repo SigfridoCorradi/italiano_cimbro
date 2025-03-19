@@ -38,7 +38,6 @@ def translate():
     prompt = data.get("prompt", "")
     response_text = translator_istance.executeInference(prompt)
     response_text = response_text[0].upper() + response_text[1:]
-    response_text = response_text.replace(".", "")
     return jsonify({"response": response_text})
 
 if __name__ == "__main__":
