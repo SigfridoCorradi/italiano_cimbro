@@ -50,7 +50,7 @@
             margin-bottom: 15px;
         }
 
-        #prompt, #corretta {
+        #prompt {
             width: calc(100% - 20px);
         }
     </style>
@@ -78,8 +78,6 @@
 
             const data = await response.json();
             document.getElementById("response").innerText = data.response;
-            document.getElementById("salvataggio").innerText = "";
-            document.getElementById("corretta").value = '';
         }
     </script>
 </body>
