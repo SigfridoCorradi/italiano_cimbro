@@ -69,7 +69,7 @@ Oggi, il cimbro è parlato solo a Giazza e viene tutelato da due associazioni cu
    | Provincia di Verona    | Prvìnz vòme Bèarn    |
    | ...       | ...       |
 
-   Ed un secondo file csv con il dataset utilizzato per la valutazione durante l'addestramento, nella stessa forma del file csv con il dataset di training e chiamato `evaluation_dataset.csv` .
+   Ed un secondo file csv con il dataset utilizzato per la valutazione durante l'addestramento, nella stessa forma del file csv con il dataset di training e chiamato `evaluation_dataset.csv`. Una volta preparati i due file è possibile avviare il fine-tuning:
 
     ```bash
     python exec_finetuning.py
