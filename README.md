@@ -12,7 +12,7 @@ Il modello **Helsinki-NLP/opus-mt-it-de** è un modello di traduzione automatica
 
 Il modello utilizza una rete neurale di tipo Transformer, e si basa sul dataset OPUS (Open Parallel Corpus): un ampio corpus di traduzioni parallele tra diverse lingue. Ho utilizzato questo modello come punto di partenza per eseguire il fine-tuning su coppie di traduzione dall'italiano al cimbro.
 
-Per maggioriinformazioni sul modello Helsinki-NLP/opus-mt-it-de, visita il [repository ufficiale su Hugging Face](https://huggingface.co/Helsinki-NLP/opus-mt-it-de).
+Per maggiori informazioni sul modello Helsinki-NLP/opus-mt-it-de, visita il [repository ufficiale su Hugging Face](https://huggingface.co/Helsinki-NLP/opus-mt-it-de).
 
 Scegliendo un diverso modello pre-addestrato è possibile quindi utilizzare la classe `Translator` per eseguire il fine-tuning su qualsiasi altro dialetto.
 
