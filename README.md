@@ -4,7 +4,7 @@ Questo progetto consiste in un modello di traduzione linguistica  dall'Italiano 
 1. **exec_finetuning.py**: permette di eseguire il fine-tuning del modello mediante la chiamata al metodo `executeFineTuning` della classe `Translator`: `translator_instance.executeFineTuning(get_optimized_hyperparameter = False)`. Il parametro `get_optimized_hyperparameter` se posto a `True` permette di eseguire l'ottimizzatore di iperparametri [Optuna](https://optuna.org/).
 2. **app.py**: avvia un'applicazione web in Flask per eseguire l'inferenza sul modello ed ottenere quindi la traduzione. Viene usato il metodo `executeInference` della classe `Translator`. Questo metodo riceve un solo parametro: il testo da tradurre. Il parametero `temperature` è impostato a `0.7`, eventualmente si potrebbe aggiungere come parametro al metodo `executeInference` (promemoria: valori tra 0.2 - 0.7 permettono la generazione di risposte più precise e coerenti al dataset di training mentre valori tra 0.8 - 1.5 permettono la generazione di risposte più creative).
 3. **translator.py**: classe `Translator` con i due metodi principali `executeFineTuning` ed `executeInference`. La configurazione di tutti i parametri per il fine-tuning, il salvataggio del modello pre-addestrato, la struttura dei file csv, ecc. è definita nel costruttore di classe.
-4. **templates**: cartella con il template html `index.html` per lpinterfaccia web di inferenza.
+4. **templates**: cartella con il template html `index.html` per l'interfaccia web di inferenza.
 
 ## Note sul modello Helsinki-NLP/opus-mt-it-de
 
