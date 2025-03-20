@@ -10,15 +10,16 @@ Questo progetto consiste in un modello di traduzione linguistica  dall'Italiano 
 
 Il modello **Helsinki-NLP/opus-mt-it-de** è un modello di traduzione automatica pre-addestrato, sviluppato dal team Helsinki-NLP.
 
-Il modello utilizza una rete neurale di tipo Transformer, e si basa sul dataset OPUS (Open Parallel Corpus): un ampio corpus di traduzioni parallele tra diverse lingue. L'architettura Transformer è particolarmente adatta per compiti di traduzione, poiché permette di modellare dipendenze a lungo termine tra le parole, migliorando la qualità delle traduzioni.
+Il modello utilizza una rete neurale di tipo Transformer, e si basa sul dataset OPUS (Open Parallel Corpus): un ampio corpus di traduzioni parallele tra diverse lingue. Ho utilizzato questo modello come punto di partenza per eseguire il fine-tuning su coppie di traduzione dall'italiano al cimbro.
 
-In questo caso, ho utilizzato questo modello come punto di partenza ed abbiamo eseguito il fine-tuning sui coppie di traduzione dall'italiano al cimbro.
+Per maggioriinformazioni sul modello Helsinki-NLP/opus-mt-it-de, visita il [repository ufficiale su Hugging Face](https://huggingface.co/Helsinki-NLP/opus-mt-it-de).
 
-Per maggiori informazioni sul modello Helsinki-NLP/opus-mt-it-de, visita il [repository ufficiale su Hugging Face](https://huggingface.co/Helsinki-NLP/opus-mt-it-de).
+Scegliendo un diverso modello pre-addestrato è possibile quindi utilizzare la classe `Translator` per eseguire il fine-tuning su qualsiasi altro dialetto.
 
 ## Modello disponibile su Huggin Face
 
-Il modello fine-tuned è disponibile nel formato Safetensors su [Huggin Face - italiano_cimbro](https://huggingface.co/sigfrido-corradi/italiano_cimbro)
+Il modello fine-tuned sul cimbro è disponibile nel formato Safetensors su [Huggin Face - italiano_cimbro](https://huggingface.co/sigfrido-corradi/italiano_cimbro).
+Inoltre è possibile testarlo all'indirizzo: (https://www.italianocimbro.it/)[https://www.italianocimbro.it/].
 
 ## Note sui Cimbri
 
