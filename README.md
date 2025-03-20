@@ -19,6 +19,7 @@ Scegliendo un diverso modello pre-addestrato è possibile quindi utilizzare la c
 ## Modello disponibile su Huggin Face
 
 Il modello fine-tuned sul cimbro è disponibile nel formato Safetensors su [Huggin Face - italiano_cimbro](https://huggingface.co/sigfrido-corradi/italiano_cimbro).
+
 Inoltre è possibile testarlo all'indirizzo: [https://www.italianocimbro.it/](https://www.italianocimbro.it/).
 
 ## Note sui Cimbri
