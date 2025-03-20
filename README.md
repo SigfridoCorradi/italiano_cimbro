@@ -35,7 +35,7 @@ Il cimbro dei XIII Comuni, chiamato Tauc a [Giazza](https://it.wikipedia.org/wik
 
 Da allora, la lingua iniziò a scomparire nei vari comuni cimbri, resistendo fino alla fine dell’Ottocento solo in Velo, Selva di Progno e San Bortolo. L'influenza delle lingue romanze (italiano, veneto e trentino) portò numerosi prestiti linguistici, specialmente per termini legati a nuovi alimenti, utensili e tecnologia.
 
-Oggi, il cimbro è parlato solo a Giazza e viene tutelato da due associazioni culturali, il Curatorium Cimbricum Veronense e De Zimbar 'un Ljetzan, che promuovono corsi e iniziative per mantenerlo vivo.
+Oggi, il cimbro è parlato solo a [Giazza](https://it.wikipedia.org/wiki/Giazza) e viene tutelato da due associazioni culturali, il [Curatorium Cimbricum Veronense](https://www.cimbri.it/) e [De Zimbar "UN LJETZAN"](https://www.facebook.com/dezimbarunljetzan), che promuovono corsi e iniziative per mantenerlo vivo.
 
 ## Installazione
 
