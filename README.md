@@ -1,68 +1,70 @@
-# Modello Linguistico per tradurre dall'Italiano al Cimbro
+# Linguistic Model for Translating from Italian to Cimbro
 
-Questo progetto consiste in un modello di traduzione linguistica  dall'Italiano al Cimbro sviluppato mediante fine-tuning del modello [Helsinki-NLP/opus-mt-it-de](https://huggingface.co/Helsinki-NLP/opus-mt-en-de). Il progetto include i seguenti file:
-1. **exec_finetuning.py**: permette di eseguire il fine-tuning del modello mediante la chiamata al metodo `executeFineTuning` della classe `Translator`: `translator_instance.executeFineTuning(get_optimized_hyperparameter = False)`. Il parametro `get_optimized_hyperparameter` se posto a `True` permette di eseguire l'ottimizzatore di iperparametri [Optuna](https://optuna.org/).
-2. **app.py**: avvia un'applicazione web in Flask per eseguire l'inferenza sul modello ed ottenere quindi la traduzione. Viene usato il metodo `executeInference` della classe `Translator`. Questo metodo riceve un solo parametro: il testo da tradurre. Il parametero `temperature` è impostato a `0.7`, eventualmente si potrebbe aggiungere come parametro al metodo `executeInference` (promemoria: valori tra 0.2 - 0.7 permettono la generazione di risposte più precise e coerenti al dataset di training mentre valori tra 0.8 - 1.5 permettono la generazione di risposte più creative).
-3. **translator.py**: classe `Translator` con i due metodi principali `executeFineTuning` ed `executeInference`. La configurazione di tutti i parametri per il fine-tuning, il salvataggio del modello pre-addestrato, la struttura dei file csv, ecc. è definita nel costruttore di classe.
-4. **templates**: cartella con il template html `index.html` per l'interfaccia web di inferenza.
+This project consists of a language translation model from Italian to Cimbro developed by fine-tuning the [Helsinki-NLP/opus-mt-it-de](https://huggingface.co/Helsinki-NLP/opus-mt-en-de) model. The project includes the following files:
+1. **exec_finetuning.py**: allows fine-tuning of the model by calling the `executeFineTuning` method of the `Translator` class: `translator_instance.executeFineTuning(get_optimized_hyperparameter = False)`. If `get_optimized_hyperparameter` is set to `True` it executes the hyperparameter optimizer [Optuna](https://optuna.org/).
+2. **app.py**: starts a web application in Flask to perform inference and obtain the translation, using the `executeInference` method of the `Translator` class. This method receives only one parameter: the text to be translated. The `temperature` parameter is set to `0.7`, possibly it could be added in the future as a parameter to the `executeInference` method (reminder: values between 0.2 - 0.7 allow the generation of more accurate and consistent answers to the training dataset while values between 0.8 - 1.5 allow the generation of more creative answers).
+3. **translator.py**: `Translator` class with the two main methods `executeFineTuning` and `executeInference`. The configuration of all parameters for fine-tuning, saving the pre-trained model, csv file structure, etc. is defined in the class constructor.
+4. **templates**: folder with the html template `index.html` for the inference web interface.
 
-## Note sul modello Helsinki-NLP/opus-mt-it-de
+## Notes on the Helsinki-NLP/opus-mt-it-de model
 
-Il modello **Helsinki-NLP/opus-mt-it-de** è un modello di traduzione automatica pre-addestrato, sviluppato dal team Helsinki-NLP.
+The **Helsinki-NLP/opus-mt-it-de** model is a pre-trained machine translation model developed by the [Helsinki-NLP](https://huggingface.co/Helsinki-NLP) team.
 
-Il modello utilizza una rete neurale di tipo Transformer, e si basa sul dataset OPUS (Open Parallel Corpus): un ampio corpus di traduzioni parallele tra diverse lingue. Ho utilizzato questo modello come punto di partenza per eseguire il fine-tuning su coppie di traduzione dall'italiano al cimbro.
+The model uses a Transformer-type neural network, and is based on the OPUS (Open Parallel Corpus) dataset: a large corpus of parallel translations between different languages. I used this model as a starting point to perform fine-tuning on translation pairs from Italian to Cimbro.
 
-Per maggiori informazioni sul modello Helsinki-NLP/opus-mt-it-de, visita il [repository ufficiale su Hugging Face](https://huggingface.co/Helsinki-NLP/opus-mt-it-de).
+For more information on the Helsinki-NLP/opus-mt-it-de model, visit the [official repository on Hugging Face](https://huggingface.co/Helsinki-NLP/opus-mt-it-de).
 
-Scegliendo un diverso modello pre-addestrato è possibile quindi utilizzare la classe `Translator` per eseguire il fine-tuning su qualsiasi altro dialetto.
+By choosing a different pre-trained model, it is then possible to use the `Translator` class to perform fine-tuning on any other dialect.
 
-## Modello disponibile su Huggin Face
+## Model available on Huggin Face
 
-Il modello fine-tuned sul cimbro è disponibile nel formato Safetensors su [Huggin Face - italiano_cimbro](https://huggingface.co/sigfrido-corradi/italiano_cimbro).
+The fine-tuned model on cimbro is available in Safetensors format at [Huggin Face - Italian_cimbro](https://huggingface.co/sigfrido-corradi/italiano_cimbro).
 
-Inoltre è possibile testarlo all'indirizzo: [https://www.italianocimbro.it/](https://www.italianocimbro.it/).
+It can also be tested at: [https://www.italianocimbro.it/](https://www.italianocimbro.it/).
 
-## Note sui Cimbri
+## Notes on the **Cimbri**
 
-I Cimbri dei XIII Comuni discendono da migrazioni medievali di coloni tedeschi, giunti nel Veronese prima del 1287 dall'Alta Valle del Chiampo. Il 5 febbraio 1287, il vescovo di Verona concesse loro un'area semi-spopolata nei Monti Lessini per l'insediamento. I Cimbri si dedicarono al disboscamento, all'allevamento della pecora Brogna e alla produzione di lana pregiata.
+The Cimbri of the "XIII Comuni" are descended from medieval migrations of German settlers who came to the Verona area before 1287 from the "Alta Valle del Chiampo". On February 5, 1287, the bishop of Verona granted them a semi-populated area in the Lessinia Mountains for settlement. The Cimbri engaged in logging, Brogna sheep breeding and the production of fine wool.
 
-Espandendosi, formarono XIII comunità in varie località della Lessinia. Dopo la caduta degli Scaligeri, i Cimbri ottennero conferme dei loro privilegi dai Visconti e, sotto la Repubblica di Venezia, divennero proprietari di terre. Nel '600, furono incaricati della difesa dei confini e svilupparono l'uso dei "Trombini", archibugi usati ancora oggi nelle feste locali.
+Expanding, they formed XIII communities in various localities of Lessinia. After the fall of the Scaligeri, the Cimbri obtained confirmations of their privileges from the Visconti and, under the Venetian Republic, became landowners. In the 1600s, they were in charge of border defense and developed the use of "Trombini", arquebuses still used today in local festivals.
 
-La peste del 1630 e le carestie seguenti portarono alla crisi delle comunità, spingendo all’emigrazione e alla diffusione di nuove colture americane come mais e fagioli. La transumanza offrì nuove opportunità lavorative, ma la lingua cimbra si ridusse progressivamente.
+The plague of 1630 and subsequent famines led to community crisis, prompting emigration and the spread of new American crops such as corn and beans. Transhumance offered new employment opportunities, but the language of the Cimbri gradually declined.
 
-## Note sul dialetto germanico cimbro
+## Notes on the Germanic dialect "Cimbro"
 
-Il cimbro dei XIII Comuni, chiamato Tauc a [Giazza](https://it.wikipedia.org/wiki/Giazza), è un dialetto germanico arrivato in Lessinia con i coloni tedeschi dal XII secolo. Derivato dal medio alto tedesco parlato in Tirolo e Baviera, si diffuse nell'altopiano, lasciando tracce nella toponomastica e raggiungendo la massima espansione nel XVII secolo.
+The cimbro of "XIII Comuni", called "Tauc" in [Giazza](https://it.wikipedia.org/wiki/Giazza), is a Germanic dialect that arrived in Lessinia with German settlers from the 12th century. Derived from Middle High German spoken in Tyrol and Bavaria, it spread across the plateau, leaving traces in toponymy and reaching its greatest expansion in the 17th century.
 
-Da allora, la lingua iniziò a scomparire nei vari comuni cimbri, resistendo fino alla fine dell’Ottocento solo in Velo, Selva di Progno e San Bortolo. L'influenza delle lingue romanze (italiano, veneto e trentino) portò numerosi prestiti linguistici, specialmente per termini legati a nuovi alimenti, utensili e tecnologia.
+From then on, the language began to disappear in the various Cimbrian municipalities, enduring until the end of the 19th century only in Velo, Selva di Progno, and San Bortolo. The influence of the romance languages brought numerous linguistic borrowings, especially for terms related to new foods, utensils, and technology.
 
-Oggi il cimbro è parlato solo a [Giazza](https://it.wikipedia.org/wiki/Giazza) e viene tutelato da due associazioni culturali, il [Curatorium Cimbricum Veronense](https://www.cimbri.it/) e [De Zimbar "UN LJETZAN"](https://www.facebook.com/dezimbarunljetzan), che promuovono corsi e iniziative per mantenerlo vivo.
+Today cimbro is spoken only in [Giazza](https://it.wikipedia.org/wiki/Giazza) and is protected by two cultural associations: the [Curatorium Cimbricum Veronense](https://www.cimbri.it/) and [De Zimbar “UN LJETZAN”](https://www.facebook.com/dezimbarunljetzan), which promote courses and initiatives to keep it alive.
 
-## Installazione
+## Installation
 
-1. **Clonare il repository**:
+1. **Clone the repository**:
 
     ```bash
     git clone https://github.com/SigfridoCorradi/italiano_cimbro
     cd italiano_cimbro
     ```
 
-2. **Creare un ambiente virtuale** (opzionale ma **fortemente** consigliato):
+2. **Create a virtual environment** (optional but **strongly** recommended):
 
     ```bash
     python -m venv venv
     source venv/bin/activate
     ```
 
-3. **Installare le dipendenze**:
+3. **Install dependencies**:
 
     ```bash
     pip install -r requirements.txt
     ```
 
-4. **Eseguire il fine-tuning del modello**:
+4. **Perform fine-tuning of the model**:
 
-   Per eseguire il fine-tuning è necessario aver preparato due file csv. Uno con il dataset di trainig chiamato `training_dataset.csv` nella forma:
+    Note: fine-tuning needed only in case of use on model or dataset different from current project on Cimbro language, otherwise just take model from [Huggin Face](https://huggingface.co/sigfrido-corradi/italiano_cimbro) and place it in `fine_tuned_model` folder.
+
+   To perform fine-tuning, it is necessary to have prepared two csv files. One with the trainig dataset called `training_dataset.csv` structured as follows:
 
    | source | target |
    |-----------|-----------|
@@ -71,15 +73,15 @@ Oggi il cimbro è parlato solo a [Giazza](https://it.wikipedia.org/wiki/Giazza) 
    | Provincia di Verona    | Prvìnz vòme Bèarn    |
    | ...       | ...       |
 
-   Ed un secondo file csv con il dataset utilizzato per la valutazione durante l'addestramento, nella stessa forma del file csv con il dataset di training e chiamato `evaluation_dataset.csv`. Una volta preparati i due file è possibile avviare il fine-tuning:
+   And a second csv file with the dataset used for evaluation during training, in the same form as the csv file with the training dataset and named `evaluation_dataset.csv`. Once the two files have been prepared, fine-tuning can be started:
 
     ```bash
     python exec_finetuning.py
     ```
 
-6. **Avviare l'applicazione Flask**:
+6. **Start the Flask application**:
 
-    Una volta completato il fine-tuning, è sufficiente avviare l'applicazione web per l'inferenza e posizionarsi all'indirizzo `http://127.0.0.1:8080`
+    Once fine-tuning is completed (or using the model available at [Huggin Face](https://huggingface.co/sigfrido-corradi/italiano_cimbro)), simply start the web application for inference and go to `http://127.0.0.1:8080`
 
     ```bash
     python app.py
