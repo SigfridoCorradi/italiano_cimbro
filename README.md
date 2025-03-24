@@ -1,4 +1,4 @@
-# Linguistic Model for Translating from Italian to Cimbro
+# Linguistic Model for Translating from Italian to Cimbro (adaptable to any other language pair)
 
 This project consists of a language translation model from Italian to Cimbro developed by fine-tuning the [Helsinki-NLP/opus-mt-it-de](https://huggingface.co/Helsinki-NLP/opus-mt-en-de) model. The project includes the following files:
 1. **exec_finetuning.py**: allows fine-tuning of the model by calling the `executeFineTuning` method of the `Translator` class: `translator_instance.executeFineTuning(get_optimized_hyperparameter = False)`. If `get_optimized_hyperparameter` is set to `True` it executes the hyperparameter optimizer [Optuna](https://optuna.org/).
