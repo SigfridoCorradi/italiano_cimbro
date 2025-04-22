@@ -61,9 +61,8 @@ Today cimbro is spoken only in [Giazza](https://it.wikipedia.org/wiki/Giazza) an
     ```
 
 4. **Perform fine-tuning of the model**:
-
-    Note: fine-tuning needed only in case of use on model or dataset different from current project on Cimbro language, otherwise just take model from [Huggin Face](https://huggingface.co/sigfrido-corradi/italiano_cimbro) and place it in `fine_tuned_model` folder.
-
+    > fine-tuning needed only in case of use on model or dataset different from current project on Cimbro language, otherwise just take model from [Huggin Face](https://huggingface.co/sigfrido-corradi/italiano_cimbro) and place it in `fine_tuned_model` folder.
+   
    To perform fine-tuning, it is necessary to have prepared two csv files. One with the trainig dataset called `training_dataset.csv` structured as follows:
 
    | source | target |
