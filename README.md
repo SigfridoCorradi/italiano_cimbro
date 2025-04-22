@@ -22,7 +22,7 @@ The fine-tuned model on cimbro is available in Safetensors format at [Huggin Fac
 
 It can also be tested at: [https://www.italianocimbro.it/](https://www.italianocimbro.it/).
 
-## Notes on the **Cimbri**
+## Notes on the "**Cimbri**"
 
 The Cimbri of the "XIII Comuni" are descended from medieval migrations of German settlers who came to the Verona area before 1287 from the "Alta Valle del Chiampo". On February 5, 1287, the bishop of Verona granted them a semi-populated area in the Lessinia Mountains for settlement. The Cimbri engaged in logging, Brogna sheep breeding and the production of fine wool.
 
@@ -30,7 +30,7 @@ Expanding, they formed XIII communities in various localities of Lessinia. After
 
 The plague of 1630 and subsequent famines led to community crisis, prompting emigration and the spread of new American crops such as corn and beans. Transhumance offered new employment opportunities, but the language of the Cimbri gradually declined.
 
-## Notes on the Germanic dialect "Cimbro"
+## Notes on the Germanic dialect "**Cimbro**"
 
 The cimbro of "XIII Comuni", called "Tauc" in [Giazza](https://it.wikipedia.org/wiki/Giazza), is a Germanic dialect that arrived in Lessinia with German settlers from the 12th century. Derived from Middle High German spoken in Tyrol and Bavaria, it spread across the plateau, leaving traces in toponymy and reaching its greatest expansion in the 17th century.
 
