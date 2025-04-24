@@ -7,12 +7,6 @@ import os
 import torch 
 import evaluate 
 
-'''
-This is a custom callback class that:
- - Tracks the BLEU score (a standard metric for evaluating translation quality) during training
- - Calculates BLEU scores at the end of each epoch
- - Stop training when the BLEU score stops improving
-'''
 class BLEUCallback(TrainerCallback):
     def __init__(self, tokenizer, eval_dataset, model, dataset_source_csv_column_header = "source", dataset_target_csv_column_header = "target"):
         self.best_bleu = 0.0
@@ -24,9 +18,6 @@ class BLEUCallback(TrainerCallback):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = model.to(self.device)
 
-    '''
-    Method that runs the BLEU metric at the end of each training epoch.
-    '''
     def on_epoch_end(self, args, state, control, **kwargs):
         bleu_metric = evaluate.load("bleu")
         predictions = []
@@ -56,7 +47,6 @@ class BLEUCallback(TrainerCallback):
         else:
             self.best_bleu = bleu_score
 
-#This is the main class that handles the entire translation pipeline
 class Translator:
     def __init__(self, pretrained_model_name = "Helsinki-NLP/opus-mt-it-de", pretrained_download = True, pretrained_local_dir_download = './pretrained_model', dataset_training_csv = "training_dataset.csv", dataset_evaluation_csv = "evaluation_dataset.csv", dataset_csv_delimiter = "#", dataset_source_csv_column_header = "source", dataset_target_csv_column_header = "target", use_metric_as_trainer_callback = True, optimizer_learning_rate = [1e-5, 5e-4], optimizer_per_device_train_batch_size = [6, 8, 32], optimizer_num_train_epochs = [4, 6], optimizer_weight_decay = [1e-4, 1e-2], fine_tuned_model_dir = "./fine_tuned_model", fine_tuning_learning_rate=8e-5, fine_tuning_per_device_train_batch_size=8, fine_tuning_per_device_eval_batch_size=8, fine_tuning_num_train_epochs=8, fine_tuning_weight_decay=0.01):
 
@@ -136,16 +126,6 @@ class Translator:
             raise ValueError(f"optimizer_weight_decay expected, got {optimizer_weight_decay}")
         self.optimizer_weight_decay = optimizer_weight_decay
 
-    '''
-    prepareDataset method:
-        - Loads training and evaluation CSV datasets
-        - Handles model and tokenizer initialization (either downloading or loading locally)
-        - Preprocesses the text data by:
-            - Converting inputs and targets to strings
-            - Tokenizing with appropriate padding and truncation
-            - Preparing model inputs with labels
-        - Returns tokenized datasets and the tokenizer
-    '''
     def prepareDataset(self):
         dataset = load_dataset("csv", data_files={"train": self.dataset_training_csv, "eval": self.dataset_evaluation_csv}, delimiter=self.dataset_csv_delimiter)
 
@@ -174,19 +154,6 @@ class Translator:
         tokenized_datasets = dataset.map(preprocess_function, batched=True)
         return tokenized_datasets, tokenizer
 
-    '''
-    executeFineTuning method:
-        - Prepares datasets and loads the model
-        - Implements two paths:
-            - Hyperparameter optimization (when get_optimized_hyperparameter=True):
-                - Uses Optuna to search for optimal hyperparameters
-                - Defines an objective function that trains with different parameter configurations
-                - Optimizes for minimizing evaluation loss
-            - Standard fine-tuning:
-                - Sets up training arguments with specified hyperparameters
-                - Creates a trainer with the model, datasets, and the BLEU callback
-                - Runs training and saves the final model and tokenizer
-    '''
     def executeFineTuning(self, get_optimized_hyperparameter = False):
         tokenized_datasets, tokenizer = self.prepareDataset()
 
@@ -270,13 +237,6 @@ class Translator:
         trainer.save_model(self.fine_tuned_model_dir)
         tokenizer.save_pretrained(self.fine_tuned_model_dir)
 
-    '''
-    executeInference method:
-        - Loads the fine-tuned model and tokenizer
-        - Takes an input text, tokenizes it
-        - Generates a translation using beam search with some controlled randomness (temperature set to 0.7)
-        - Returns the decoded translation
-    '''
     def executeInference(self, input_text):
         tokenizer = AutoTokenizer.from_pretrained(self.fine_tuned_model_dir)
         model = AutoModelForSeq2SeqLM.from_pretrained(self.fine_tuned_model_dir)
