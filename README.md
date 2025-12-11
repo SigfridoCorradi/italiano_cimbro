@@ -55,7 +55,7 @@ The cimbro of "XIII Comuni", called "Tauc" in [Giazza](https://it.wikipedia.org/
 
 From then on, the language began to disappear in the various Cimbrian municipalities, enduring until the end of the 19th century only in Velo, Selva di Progno, and San Bortolo. The influence of the romance languages brought numerous linguistic borrowings, especially for terms related to new foods, utensils, and technology.
 
-Today cimbro is spoken only in [Giazza](https://it.wikipedia.org/wiki/Giazza) and is protected by two cultural associations: the [Curatorium Cimbricum Veronense](https://www.cimbri.it/) and [De Zimbar “UN LJETZAN”](https://www.facebook.com/dezimbarunljetzan), which promote courses and initiatives to keep it alive.
+Today cimbro is spoken only in [Giazza](https://it.wikipedia.org/wiki/Giazza) and is protected by the cultural association [Curatorium Cimbricum Veronense](https://www.cimbri.it/) , which promote courses and initiatives to keep it alive.
 
 ## Installation
 
