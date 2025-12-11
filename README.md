@@ -1,5 +1,24 @@
 # Language Model for Translating from Italian to Cimbro (adaptable to any other language pair)
 
+> [!TIP]
+> New file `finetune_alpaca.py` for a new minimal and super simplified version starting from a dataset in Alpaca format (`dataset.json`), example:
+> ```
+> [
+>     {
+>         "instruction": "Vado al mercato a comperarmi un paio di scarpe",
+>         "input": "",
+>         "output": "Ich gèa kàme markà tzé kófamar a pàar schùage"
+>     },
+>     {
+>         "instruction": "Si possono aggiustare queste scarpe?",
+>         "input": "",
+>         "output": "Man móugan rìchtan dìʃe schùage?"
+>     }
+> ]
+> ```
+> You can check the maximum length, in tokens, of the sentences in the dataset using the TEST_MAX_TOKEN_DATASET parameter or perform fine-tuning using the EXECUTE_FINE_TUNING parameter. If both are set to False, then a sample sentence is translated as seen in “__main__”.
+
+
 This project consists of a language translation model from Italian to Cimbro developed by **full fine-tuning** the [Helsinki-NLP/opus-mt-it-de](https://huggingface.co/Helsinki-NLP/opus-mt-en-de) model. The project includes the following files:
 1. **exec_finetuning.py**: allows fine-tuning of the model by calling the `executeFineTuning` method of the `Translator` class: `translator_instance.executeFineTuning(get_optimized_hyperparameter = False)`. If `get_optimized_hyperparameter` is set to `True` it executes the hyperparameter optimizer [Optuna](https://optuna.org/).
 2. **app.py**: starts a web application in Flask to perform inference and obtain the translation, using the `executeInference` method of the `Translator` class. This method receives only one parameter: the text to be translated. The `temperature` parameter is set to `0.7`, possibly it could be added in the future as a parameter to the `executeInference` method (reminder: values between 0.2 - 0.7 allow the generation of more accurate and consistent answers to the training dataset while values between 0.8 - 1.5 allow the generation of more creative answers).
