@@ -15,7 +15,7 @@ from transformers import pipeline
 from transformers import AutoTokenizer
 
 # --- CONFIGURAZIONE ---
-EXECUTE_FINE_TUNING = False
+EXECUTE_FINE_TUNING = True
 TEST_MAX_TOKEN_DATASET = False
 
 MODEL_CHECKPOINT = "Helsinki-NLP/opus-mt-it-de"
