@@ -130,7 +130,7 @@ def run_finetuning():
         )
 
         model_inputs["labels"] = labels["input_ids"]
-        
+
         return model_inputs
 
     tokenized_datasets = dataset.map(preprocess_function, batched=True, remove_columns=dataset["train"].column_names)
@@ -188,14 +188,14 @@ def run_finetuning():
 
     # 7. Initialization Trainer
     trainer = Seq2SeqTrainer(
-        model=model,
-        args=args,
-        train_dataset=tokenized_datasets["train"],
-        eval_dataset=tokenized_datasets["test"],
-        data_collator=data_collator,
-        tokenizer=tokenizer,
-        compute_metrics=compute_metrics,
-    )
+      model=model,
+      args=args,
+      train_dataset=tokenized_datasets["train"],
+      eval_dataset=tokenized_datasets["test"],
+      data_collator=data_collator,
+      processing_class=tokenizer,
+      compute_metrics=compute_metrics,
+  )
 
     print("Starting training...")
     trainer.train()
