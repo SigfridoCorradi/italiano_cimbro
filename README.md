@@ -18,11 +18,24 @@
 > ```
 > You can check the maximum length, in tokens, of the sentences in the dataset using the TEST_MAX_TOKEN_DATASET parameter or perform fine-tuning using the EXECUTE_FINE_TUNING parameter. If both are set to False, then a sample sentence is translated as seen in “__main__”.
 > 
-> Needed *pip install evaluate*
-> 
-> Needed: *pip install sacremoses*
-> 
-> Needed: *pip install sacrebleu*
+> Needed: *pip install evaluate sacremoses sacrebleu*
+>
+> Training information, example:
+>
+> | Metric | Meaning |
+> |---|---|
+> | **Epoch = 1** | The first complete pass over the training dataset has finished. |
+> | **Training Loss = 4.846142** | The model’s average error on the training data. The lower the better. |
+> | **Validation Loss = 4.180175** | Average error on the validation data, i.e. sentences not used directly to update the weights. The lower the better. |
+> | **BLEU = 1.422717** | Translation quality relative to the target sentences. Typical scale 0–100. The higher the better. |
+>
+> Trends in subsequent epochs:
+>
+> | Epoch | Validation Loss | BLEU |
+> |---|---|---|
+> | Epoch 2 | ↓ | ↑ |
+> | Epoch 3 | ↓ | ↑ |
+
 
 
 This project consists of a language translation model from Italian to Cimbro developed by **full fine-tuning** the [Helsinki-NLP/opus-mt-it-de](https://huggingface.co/Helsinki-NLP/opus-mt-en-de) model. The project includes the following files:
