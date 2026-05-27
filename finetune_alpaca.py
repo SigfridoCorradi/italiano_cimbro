@@ -13,6 +13,7 @@ import evaluate
 import numpy as np
 from transformers import pipeline
 from transformers import AutoTokenizer
+from transformers import EarlyStoppingCallback
 
 # --- CONFIGURAZIONE ---
 EXECUTE_FINE_TUNING = True
@@ -25,9 +26,11 @@ DATA_FILE = "dataset.json"
 MAX_SOURCE_LENGTH = 512
 MAX_TARGET_LENGTH = 512
 
-LEARNING_RATE = 2e-5
+#LEARNING_RATE = 2e-5
+LEARNING_RATE = 3e-5
+
 BATCH_SIZE = 16
-NUM_EPOCHS = 20
+NUM_EPOCHS = 25
 FP16 = True
 
 def check_token_lengths():
@@ -97,7 +100,7 @@ def run_finetuning():
     dataset = load_dataset("json", data_files=data_files, split="train")
 
     # Split Train/Test (90% train, 10% test)
-    dataset = dataset.train_test_split(test_size=0.1)
+    dataset = dataset.train_test_split(test_size=0.1, seed=42)
 
     #3. Preprocessing (The crucial part for Alpaca -> Translation)
     def preprocess_function(examples):
@@ -174,6 +177,8 @@ def run_finetuning():
         save_total_limit=2,               # Keep only the last 2 models to save space
         num_train_epochs=NUM_EPOCHS,
         predict_with_generate=True,       # Essential for calculating BLEU during training
+        generation_num_beams=4,
+        generation_max_length=MAX_TARGET_LENGTH,
         fp16=FP16,                        # Speed and memory
         push_to_hub=False,
         logging_dir=f"{OUTPUT_DIR}/logs",
@@ -181,9 +186,9 @@ def run_finetuning():
         load_best_model_at_end=True,      # Finally, load the model with the best BLEU (or lowest loss): if epoch 10
                                           # the model performs worse than epoch 8 (overfitting), the script automatically 
                                           # reloads the weights from epoch 8.
-        metric_for_best_model="eval_loss", # Or “bleu” if you prefer
-        greater_is_better=False,          # False if you use loss, True if you use bleu
-        label_smoothing_factor=0.1        # prevents the model from being “too confident” in its predictions, improving generalization and often raising the BLEU score.
+        metric_for_best_model="eval_bleu",   # Or “loss” if you prefer
+        greater_is_better=True,          # False if you use loss, True if you use bleu
+        label_smoothing_factor=0.05        # prevents the model from being “too confident” in its predictions, improving generalization and often raising the BLEU score.
     )
 
     # 7. Initialization Trainer
@@ -195,6 +200,12 @@ def run_finetuning():
       data_collator=data_collator,
       processing_class=tokenizer,
       compute_metrics=compute_metrics,
+      callbacks=[
+          EarlyStoppingCallback(
+              early_stopping_patience=4,
+              early_stopping_threshold=0.05
+          )
+      ],
   )
 
     print("Starting training...")
@@ -213,5 +224,9 @@ if __name__ == "__main__":
         model_path = "./cimbro_model_v2/final_model"
         translator = pipeline("translation", model=model_path, tokenizer=model_path)
 
-        res = translator("Il mio vecchio cane")
+        res = translator(
+            "Il mio vecchio cane",
+            num_beams=4,
+            max_length=MAX_TARGET_LENGTH
+        )
         print(res[0]['translation_text'])
