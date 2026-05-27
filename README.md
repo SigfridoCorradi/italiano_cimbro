@@ -17,7 +17,9 @@
 > ]
 > ```
 > You can check the maximum length, in tokens, of the sentences in the dataset using the TEST_MAX_TOKEN_DATASET parameter or perform fine-tuning using the EXECUTE_FINE_TUNING parameter. If both are set to False, then a sample sentence is translated as seen in “__main__”.
+> 
 > Needed: *pip install sacremoses*
+> 
 > Needed: *pip install sacrebleu*
 
 
