@@ -122,15 +122,15 @@ def run_finetuning():
         )
 
         # Tokenization of labels (target)
-        with tokenizer.as_target_tokenizer():
-            labels = tokenizer(
-                targets,
-                max_length=MAX_TARGET_LENGTH,
-                truncation=True,
-                padding=False
-            )
+        labels = tokenizer(
+            text_target=targets,
+            max_length=MAX_TARGET_LENGTH,
+            truncation=True,
+            padding=False
+        )
 
         model_inputs["labels"] = labels["input_ids"]
+        
         return model_inputs
 
     tokenized_datasets = dataset.map(preprocess_function, batched=True, remove_columns=dataset["train"].column_names)
