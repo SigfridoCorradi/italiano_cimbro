@@ -16,7 +16,7 @@ from transformers import AutoTokenizer
 from transformers import EarlyStoppingCallback
 
 # --- CONFIGURAZIONE ---
-EXECUTE_FINE_TUNING = True
+EXECUTE_FINE_TUNING = False
 TEST_MAX_TOKEN_DATASET = False
 
 MODEL_CHECKPOINT = "Helsinki-NLP/opus-mt-it-de"
@@ -221,12 +221,38 @@ if __name__ == "__main__":
     elif EXECUTE_FINE_TUNING:
         run_finetuning()
     else:
-        model_path = "./cimbro_model_v2/final_model"
-        translator = pipeline("translation", model=model_path, tokenizer=model_path)
+      from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+      import torch
 
-        res = translator(
-            "Il mio vecchio cane",
-            num_beams=4,
-            max_length=MAX_TARGET_LENGTH
-        )
-        print(res[0]['translation_text'])
+      model_path = "./cimbro_model_v2/final_model"
+
+      tokenizer = AutoTokenizer.from_pretrained(model_path)
+      model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
+
+      device = "cuda" if torch.cuda.is_available() else "cpu"
+      model.to(device)
+      model.eval()
+
+      text = "Il mio vecchio cane"
+
+      inputs = tokenizer(
+          text,
+          return_tensors="pt",
+          truncation=True,
+          max_length=MAX_SOURCE_LENGTH
+      ).to(device)
+
+      with torch.no_grad():
+          generated_ids = model.generate(
+              **inputs,
+              max_length=MAX_TARGET_LENGTH,
+              num_beams=4,
+              early_stopping=True
+          )
+
+      translation = tokenizer.decode(
+          generated_ids[0],
+          skip_special_tokens=True
+      )
+
+      print(translation)
