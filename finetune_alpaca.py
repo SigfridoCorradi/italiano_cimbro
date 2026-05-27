@@ -203,7 +203,7 @@ def run_finetuning():
       callbacks=[
           EarlyStoppingCallback(
               early_stopping_patience=4,
-              early_stopping_threshold=0.05
+              early_stopping_threshold=0.01
           )
       ],
   )
