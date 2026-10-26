@@ -1,258 +1,189 @@
-import os
+"""Fine-tuning Marian IT->cimbro, valutazione e traduzione senza troncamenti."""
+import argparse
+import hashlib
 import json
-import torch
-from datasets import load_dataset
-from transformers import (
-    AutoModelForSeq2SeqLM,
-    AutoTokenizer,
-    Seq2SeqTrainingArguments,
-    Seq2SeqTrainer,
-    DataCollatorForSeq2Seq
-)
-import evaluate
+import time
+from pathlib import Path
+
 import numpy as np
-from transformers import pipeline
-from transformers import AutoTokenizer
-from transformers import EarlyStoppingCallback
+import torch
+from datasets import Dataset
+from sacrebleu.metrics import BLEU, CHRF
+from transformers import (AutoConfig, AutoModelForSeq2SeqLM, AutoTokenizer,
+                          DataCollatorForSeq2Seq, EarlyStoppingCallback,
+                          Seq2SeqTrainer, Seq2SeqTrainingArguments, set_seed)
 
-# --- CONFIGURAZIONE ---
-EXECUTE_FINE_TUNING = False
-TEST_MAX_TOKEN_DATASET = False
+ROOT = Path(__file__).resolve().parent
+OLD = ROOT / 'cimbro_model_v2_final_model'
+BASE = 'Helsinki-NLP/opus-mt-it-de'
+OUT = ROOT / 'cimbro_model_v3_from_base'
 
-MODEL_CHECKPOINT = "Helsinki-NLP/opus-mt-it-de"
-OUTPUT_DIR = "./cimbro_model_v2"
-DATA_FILE = "dataset.json"
 
-MAX_SOURCE_LENGTH = 512
-MAX_TARGET_LENGTH = 512
+def dump(path, value):
+    Path(path).write_text(json.dumps(value, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
 
-#LEARNING_RATE = 2e-5
-LEARNING_RATE = 3e-5
 
-BATCH_SIZE = 16
-NUM_EPOCHS = 25
-FP16 = True
+def load_data():
+    data = {s:json.loads((ROOT/'dataset_v3'/f'{s}.json').read_text()) for s in ('train','validation','test')}
+    from prepara_dataset import key
+    for side in ('source','target'):
+        sets = {s:{key(r[side]) for r in rows} for s,rows in data.items()}
+        assert not (sets['train'] & sets['test'] or sets['train'] & sets['validation'] or sets['test'] & sets['validation']), f'Leakage {side}'
+    return data
 
-def check_token_lengths():
-    json_file = "dataset.json"
-    model_checkpoint = "Helsinki-NLP/opus-mt-it-de"
-    tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
-    try:
-        with open(json_file, "r", encoding="utf-8") as f:
-            dataset = json.load(f)
-    except FileNotFoundError:
-        print(f"Error: missing file '{json_file}'")
+
+def encode(rows, tokenizer, limit):
+    x = tokenizer([r['source'] for r in rows], truncation=False)
+    x['labels'] = tokenizer(text_target=[r['target'] for r in rows], truncation=False)['input_ids']
+    for i,(src,tgt) in enumerate(zip(x['input_ids'],x['labels'])):
+        if max(len(src),len(tgt)) > limit:
+            raise ValueError(f'Coppia {rows[i]["id"]} supera {limit} token')
+        if tokenizer.unk_token_id in src+tgt:
+            raise ValueError(f'Token sconosciuto: {rows[i]["id"]}')
+    return Dataset.from_dict(x)
+
+
+def translate(model, tokenizer, texts, beams=4, batch_size=8):
+    limit = model.config.max_position_embeddings
+    result, capped = [], 0
+    model.eval()
+    with torch.inference_mode():
+        for start in range(0,len(texts),batch_size):
+            batch = texts[start:start+batch_size]
+            ids = tokenizer(batch, truncation=False)['input_ids']
+            if any(len(x)>limit for x in ids):
+                raise ValueError(f'Input oltre il limite di {limit} token (EOS incluso). Dividere il testo in frasi.')
+            inputs = tokenizer(batch, return_tensors='pt', padding=True, truncation=False).to(model.device)
+            preds = model.generate(**inputs, num_beams=beams, max_length=limit, use_cache=True, early_stopping=True)
+            # Marian forza EOS al limite: EOS finale non prova che la frase sia completa.
+            capped += sum(
+                int(len(p) - int((p == tokenizer.pad_token_id).sum()) + 1 >= limit) for p in preds)
+            result.extend(tokenizer.batch_decode(preds, skip_special_tokens=True))
+    return result, capped
+
+
+def evaluate_model(model, tokenizer, rows, beams=4):
+    # Stessa sorgente, più traduzioni legittime: riferimenti multipli.
+    groups = {}
+    for r in rows:
+        groups.setdefault(r['source'],[]).append(r['target'])
+    sources = list(groups)
+    refs = list(groups.values())
+    predictions,capped = translate(model,tokenizer,sources,beams)
+    refs_stream = [[r[min(i,len(r)-1)] for r in refs] for i in range(max(map(len,refs)))]
+    bleu, chrf = BLEU(), CHRF(word_order=2)
+    scores = dict(bleu=bleu.corpus_score(predictions,refs_stream).score,
+                  chrf_plus=chrf.corpus_score(predictions,refs_stream).score,
+                  sources=len(sources), generation_capped=capped,
+                  bleu_signature=str(bleu.get_signature()), chrf_signature=str(chrf.get_signature()))
+    return scores,[dict(source=s,references=r,prediction=p) for s,r,p in zip(sources,refs,predictions)]
+
+
+def evaluate_all(model, tokenizer, rows):
+    from prepara_dataset import key
+    scores, predictions = evaluate_model(model,tokenizer,rows)
+    oldrows = json.loads((ROOT/'dataset.json').read_text())
+    oldkeys = {key(r['instruction']+' '+r.get('input','')) for r in oldrows}
+    for name,is_old in [('historical',True),('new_odt',False)]:
+        subset = [r for r in predictions if (key(r['source']) in oldkeys)==is_old]
+        refs = [r['references'] for r in subset]
+        streams = [[r[min(i,len(r)-1)] for r in refs] for i in range(max(map(len,refs)))]
+        preds = [r['prediction'] for r in subset]
+        scores[name] = dict(sources=len(subset),bleu=BLEU().corpus_score(preds,streams).score,
+                            chrf_plus=CHRF(word_order=2).corpus_score(preds,streams).score)
+    return scores,predictions
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('command',choices=['check','train','evaluate','translate','benchmark'])
+    p.add_argument('--model',default=BASE)
+    p.add_argument('--output',default=str(OUT))
+    p.add_argument('--epochs',type=float,default=25)
+    p.add_argument('--batch-size',type=int,default=8)
+    p.add_argument('--learning-rate',type=float,default=3e-5)
+    p.add_argument('--threads',type=int,default=8)
+    p.add_argument('--text')
+    p.add_argument('--resume',default=None)
+    a = p.parse_args()
+    torch.set_num_threads(a.threads)
+    set_seed(42)
+    output = Path(a.output)
+    tokenizer = AutoTokenizer.from_pretrained(a.model)
+    config = AutoConfig.from_pretrained(a.model)
+    data = load_data()
+    tokenized = {s:encode(rows,tokenizer,config.max_position_embeddings) for s,rows in data.items()}
+    if a.command == 'check':
+        print(json.dumps(dict(limit=config.max_position_embeddings,splits={s:len(r) for s,r in data.items()},
+                              max_source=max(len(x) for d in tokenized.values() for x in d['input_ids']),
+                              max_target=max(len(x) for d in tokenized.values() for x in d['labels'])),indent=2))
         return
-
-    src_lengths = []
-    tgt_lengths = []
-
-    print(f"Analysis of {len(dataset)} sentences...")
-
-    for entry in dataset:
-        instruction = entry.get("instruction", "")
-        input_ctxt = entry.get("input", "")
-
-        if input_ctxt and input_ctxt.strip():
-            source_text = f"{instruction} {input_ctxt}"
-        else:
-            source_text = instruction
-
-        target_text = entry.get("output", "")
-
-        src_token_ids = tokenizer.encode(source_text, truncation=False)
-        tgt_token_ids = tokenizer.encode(target_text, truncation=False)
-
-        src_lengths.append(len(src_token_ids))
-        tgt_lengths.append(len(tgt_token_ids))
-
-    max_src = max(src_lengths)
-    max_tgt = max(tgt_lengths)
-    avg_src = int(np.mean(src_lengths))
-
-    print("\n" + "="*30)
-    print("      TOKEN LENGTH REPORT")
-    print("="*30)
-    print(f"Longest ITALIAN sentence: {max_src} token")
-    print(f"Longest CIMBRO sentence:   {max_tgt} token")
-    print(f"Medium length Italian: {avg_src} token")
-    print("-" * 30)
-
-    # 4. Verdetto
-    limit = MAX_SOURCE_LENGTH
-    if max_src <= limit and max_tgt <= limit:
-        print(f"No sentences will be cut.")
-    else:
-        needed = max(max_src, max_tgt)
-        print(f"WARNING: Some sentences exceed the limit of {MAX_SOURCE_LENGTH}.")
-        print(f"They will be cut during training.")
-        print(f"Tip: Set MAX_SOURCE/TARGET_LENGTH to at least {needed}.")
-
-def run_finetuning():
-    print(f"Loading model: {MODEL_CHECKPOINT}...")
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_CHECKPOINT)
-    model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_CHECKPOINT)
-    model.resize_token_embeddings(len(tokenizer))
-
-    # 2. Loading the Dataset (Alpaca Format)
-    print("Loading dataset...")
-    data_files = {"train": DATA_FILE}
-    dataset = load_dataset("json", data_files=data_files, split="train")
-
-    # Split Train/Test (90% train, 10% test)
-    dataset = dataset.train_test_split(test_size=0.1, seed=42)
-
-    #3. Preprocessing (The crucial part for Alpaca -> Translation)
-    def preprocess_function(examples):
-        inputs = []
-        targets = []
-
-        for instruction, inp, output in zip(examples["instruction"], examples["input"], examples["output"]):
-            if inp and inp.strip():
-                source_text = f"{instruction} {inp}"
-            else:
-                source_text = instruction
-
-            inputs.append(source_text)
-            targets.append(output)
-
-        # Tokenization
-        model_inputs = tokenizer(
-            inputs,
-            max_length=MAX_SOURCE_LENGTH,
-            truncation=True,
-            padding=False # Dynamic padding is done afterwards by the DataCollator.
-        )
-
-        # Tokenization of labels (target)
-        labels = tokenizer(
-            text_target=targets,
-            max_length=MAX_TARGET_LENGTH,
-            truncation=True,
-            padding=False
-        )
-
-        model_inputs["labels"] = labels["input_ids"]
-
-        return model_inputs
-
-    tokenized_datasets = dataset.map(preprocess_function, batched=True, remove_columns=dataset["train"].column_names)
-
-    #4. Evaluation Metric (SacreBLEU)
-    metric = evaluate.load("sacrebleu")
-
-    def compute_metrics(eval_preds):
-        preds, labels = eval_preds
-        if isinstance(preds, tuple):
-            preds = preds[0]
-
-        # Decoding predictions
-        decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
-
-        # Replace -100 in labels (used to ignore padding)
-        labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
-        decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
-
-        # Simple post-processing
-        decoded_preds = [pred.strip() for pred in decoded_preds]
-        decoded_labels = [[label.strip()] for label in decoded_labels]
-
-        result = metric.compute(predictions=decoded_preds, references=decoded_labels)
-        return {"bleu": result["score"]}
-
-    #5. Data Collator (Handles dynamic padding)
-    data_collator = DataCollatorForSeq2Seq(tokenizer, model=model)
-
-    #6. Training Topics (Optimized)
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model = AutoModelForSeq2SeqLM.from_pretrained(a.model).to(device)
+    model.generation_config.max_length = config.max_position_embeddings
+    model.generation_config.num_beams = 4
+    model.generation_config.use_cache = True
+    collator = DataCollatorForSeq2Seq(tokenizer,model=model)
+    if a.command == 'translate':
+        if not a.text:
+            p.error('--text richiesto')
+        print(translate(model,tokenizer,[a.text])[0][0])
+        return
+    if a.command == 'benchmark':
+        model.train()
+        optim = torch.optim.AdamW(model.parameters(),lr=a.learning_rate)
+        start = time.monotonic()
+        for i in range(3):
+            batch = collator([tokenized['train'][j] for j in range(i*a.batch_size,(i+1)*a.batch_size)])
+            batch = {k:v.to(device) for k,v in batch.items()}
+            loss = model(**batch).loss
+            loss.backward()
+            optim.step()
+            optim.zero_grad(set_to_none=True)
+            print('step',i+1,'loss',loss.item(),'elapsed',time.monotonic()-start,flush=True)
+        return
+    if a.command == 'train' and (output/'trainer_state.json').exists() and not a.resume:
+        raise ValueError('Output contiene già un training: scegliere --output diverso oppure --resume CHECKPOINT')
+    output.mkdir(exist_ok=True,parents=True)
+    if a.command == 'evaluate':
+        scores, predictions = evaluate_all(model,tokenizer,data['test'])
+        dump(output/'evaluation.json',scores)
+        dump(output/'predictions.json',predictions)
+        print(scores)
+        return
+    # La validation loss evita migliaia di traduzioni autoregressive su CPU ad ogni epoca.
+    # BLEU/chrF++ sono misurati sul test indipendente solo alla fine.
     args = Seq2SeqTrainingArguments(
-        output_dir=OUTPUT_DIR,
-        eval_strategy="epoch",      # Currency at the end of each era
-        save_strategy="epoch",            # Save checkpoint every epoch
-        learning_rate=LEARNING_RATE,
-        per_device_train_batch_size=BATCH_SIZE,
-        per_device_eval_batch_size=BATCH_SIZE,
-        weight_decay=0.01,                # Regularization to avoid overfitting on limited data - Essential for languages
-                                          # with limited data (such as Cimbrian) to prevent the model from memorizing
-                                          # phrases instead of learning grammar.
-        save_total_limit=2,               # Keep only the last 2 models to save space
-        num_train_epochs=NUM_EPOCHS,
-        predict_with_generate=True,       # Essential for calculating BLEU during training
-        generation_num_beams=4,
-        generation_max_length=MAX_TARGET_LENGTH,
-        fp16=FP16,                        # Speed and memory
-        push_to_hub=False,
-        logging_dir=f"{OUTPUT_DIR}/logs",
-        logging_steps=50,
-        load_best_model_at_end=True,      # Finally, load the model with the best BLEU (or lowest loss): if epoch 10
-                                          # the model performs worse than epoch 8 (overfitting), the script automatically 
-                                          # reloads the weights from epoch 8.
-        metric_for_best_model="eval_bleu",   # Or “loss” if you prefer
-        greater_is_better=True,          # False if you use loss, True if you use bleu
-        label_smoothing_factor=0.05        # prevents the model from being “too confident” in its predictions, improving generalization and often raising the BLEU score.
-    )
+        output_dir=str(output), eval_strategy='epoch',save_strategy='epoch',
+        learning_rate=a.learning_rate,per_device_train_batch_size=a.batch_size,
+        per_device_eval_batch_size=a.batch_size, num_train_epochs=a.epochs,
+        weight_decay=.01,warmup_ratio=.05,label_smoothing_factor=.05,
+        fp16=device=='cuda',use_cpu=device=='cpu',dataloader_pin_memory=device=='cuda',
+        save_total_limit=2,load_best_model_at_end=True,metric_for_best_model='eval_loss',
+        greater_is_better=False, logging_steps=25,report_to='none',seed=42,
+        group_by_length=True, optim='adamw_torch',save_safetensors=True,
+        predict_with_generate=False, disable_tqdm=True)
+    trainer = Seq2SeqTrainer(model=model,args=args,train_dataset=tokenized['train'],
+        eval_dataset=tokenized['validation'],data_collator=collator,processing_class=tokenizer,
+        callbacks=[EarlyStoppingCallback(early_stopping_patience=3,early_stopping_threshold=.001)])
+    dump(output/'run_config.json',dict(arguments=vars(a),device=device,base_model=str(a.model),
+        limit=config.max_position_embeddings,torch=torch.__version__,
+        dataset_sha256={s:hashlib.sha256((ROOT/'dataset_v3'/f'{s}.json').read_bytes()).hexdigest() for s in data},
+        dataset_report=json.loads((ROOT/'dataset_v3/report.json').read_text())))
+    baseline = trainer.evaluate()
+    dump(output/'baseline_validation.json',baseline)
+    print('Baseline validation',baseline,flush=True)
+    result = trainer.train(resume_from_checkpoint=a.resume)
+    final = output/'final_model'
+    trainer.save_model(str(final))
+    tokenizer.save_pretrained(final)
+    trainer.save_state()
+    dump(output/'train_metrics.json',result.metrics)
+    scores,predictions = evaluate_all(trainer.model,tokenizer,data['test'])
+    dump(output/'evaluation.json',scores)
+    dump(output/'predictions.json',predictions)
+    print('TEST',scores,flush=True)
 
-    # 7. Initialization Trainer
-    trainer = Seq2SeqTrainer(
-      model=model,
-      args=args,
-      train_dataset=tokenized_datasets["train"],
-      eval_dataset=tokenized_datasets["test"],
-      data_collator=data_collator,
-      processing_class=tokenizer,
-      compute_metrics=compute_metrics,
-      callbacks=[
-          EarlyStoppingCallback(
-              early_stopping_patience=4,
-              early_stopping_threshold=0.01
-          )
-      ],
-  )
 
-    print("Starting training...")
-    trainer.train()
-
-    print(f"Save model in {OUTPUT_DIR}/final_model")
-    trainer.save_model(f"{OUTPUT_DIR}/final_model")
-    tokenizer.save_pretrained(f"{OUTPUT_DIR}/final_model")
-
-if __name__ == "__main__":
-    if TEST_MAX_TOKEN_DATASET:
-        check_token_lengths()
-    elif EXECUTE_FINE_TUNING:
-        run_finetuning()
-    else:
-      from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-      import torch
-
-      model_path = "./cimbro_model_v2/final_model"
-
-      tokenizer = AutoTokenizer.from_pretrained(model_path)
-      model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
-
-      device = "cuda" if torch.cuda.is_available() else "cpu"
-      model.to(device)
-      model.eval()
-
-      text = "Il mio vecchio cane"
-
-      inputs = tokenizer(
-          text,
-          return_tensors="pt",
-          truncation=True,
-          max_length=MAX_SOURCE_LENGTH
-      ).to(device)
-
-      with torch.no_grad():
-          generated_ids = model.generate(
-              **inputs,
-              max_length=MAX_TARGET_LENGTH,
-              num_beams=4,
-              early_stopping=True
-          )
-
-      translation = tokenizer.decode(
-          generated_ids[0],
-          skip_special_tokens=True
-      )
-
-      print(translation)
+if __name__ == '__main__':
+    main()
